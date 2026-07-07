@@ -3,17 +3,28 @@ let masterClasses = [];
 let state = {
   nomination: null,
   masterClasses: [],
-  currency: 'rub'
+  gender: null
 };
 
 const nomGridSection = document.getElementById('nom-grid');
 const nomOptions = document.getElementById('nomination-options');
 const mcOptions = document.getElementById('mc-options');
+const genderOptions = document.getElementById('gender-options');
 const submitBtn = document.getElementById('submit-btn');
 const errorEl = document.getElementById('error-msg');
 const totalAmountEl = document.getElementById('total-amount');
 
 const PRIZE_TEXT = '🏆 Главный приз: поездка в Словению + TOP16/32 на WKB 2027';
+
+genderOptions.querySelectorAll('.option-card').forEach(card => {
+  card.addEventListener('click', () => {
+    genderOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.gender = card.dataset.id;
+    autoDetectNomination();
+    checkReady();
+  });
+});
 
 function selectNomination(id, auto) {
   nomOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
@@ -44,10 +55,27 @@ function autoDetectNomination() {
   const birthDateVal = document.getElementById('birthDate').value;
   if (!birthDateVal) return;
   const age = ageAtEvent(birthDateVal);
+  const hint = document.getElementById('nomination-hint');
+
   let autoId = null;
-  if (age >= 7 && age <= 10) autoId = '7-10';
-  else if (age >= 11 && age <= 13) autoId = '11-13';
-  else if (age >= 14 && age <= 17) autoId = '14-17';
+
+  if (age >= 18) {
+    // Old to the new — отдельная взрослая номинация, доступна только с 18 лет
+    autoId = 'old2new';
+  } else if (age >= 16 && age <= 17) {
+    // 16-17 лет — общая категория независимо от пола
+    autoId = '14-17';
+  } else if (age >= 14 && age <= 15) {
+    // 14-15 лет — девочки в свою номинацию, мальчики к общей 14-17
+    if (state.gender === 'female') autoId = 'girls-15';
+    else if (state.gender === 'male') autoId = '14-17';
+    else if (hint) hint.textContent = 'Укажите пол, чтобы подобрать номинацию автоматически';
+  } else if (age >= 11 && age <= 13) {
+    autoId = '11-13';
+  } else if (age >= 7 && age <= 10) {
+    autoId = '7-10';
+  }
+
   if (autoId) selectNomination(autoId, true);
 }
 
@@ -57,16 +85,14 @@ async function loadNominations() {
   const res = await fetch('/api/nominations');
   nominations = await res.json();
 
-  // Секция "Сетка баттлов"
   nomGridSection.innerHTML = nominations.map(n => `
     <div class="nom-card ${n.id === 'old2new' ? 'nom-card--special' : ''}">
-      <div class="nom-card__label">${n.id === 'old2new' ? 'Выбор вручную' : 'По дате рождения'}</div>
+      <div class="nom-card__label">${n.id === 'old2new' ? 'Только 18+ · авто-подбор' : 'По дате рождения'}</div>
       <div class="nom-card__title">${formatNomTitle(n)}</div>
       ${n.id !== 'old2new' ? `<div class="nom-card__prize">${PRIZE_TEXT}</div>` : ''}
     </div>
   `).join('');
 
-  // Форма регистрации
   nomOptions.innerHTML = nominations.map(n => `
     <div class="option-card" data-id="${n.id}">
       <div class="option-card__title">${n.name}</div>
@@ -113,38 +139,22 @@ async function loadMasterClasses() {
 
 function calcAmount() {
   const count = Math.min(state.masterClasses.length, 2);
-  if (state.currency === 'usd') {
-    if (count === 0) return 15;
-    if (count === 1) return 34;
-    return 44;
-  }
   if (count === 0) return 1200;
   if (count === 1) return 2700;
   return 3500;
 }
 
 function updateTotal() {
-  const amount = calcAmount();
-  const symbol = state.currency === 'usd' ? '$' : '₽';
-  totalAmountEl.textContent = `${amount.toLocaleString('ru-RU')} ${symbol}`;
+  totalAmountEl.textContent = `${calcAmount().toLocaleString('ru-RU')} ₽`;
 }
-
-document.querySelectorAll('.curr-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.curr-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.currency = btn.dataset.currency;
-    updateTotal();
-  });
-});
 
 function checkReady() {
   const fullName = document.getElementById('fullName').value.trim();
   const nickname = document.getElementById('nickname').value.trim();
   const birthDate = document.getElementById('birthDate').value;
-  const ready = fullName && nickname && birthDate && state.nomination;
+  const ready = fullName && nickname && birthDate && state.gender && state.nomination;
   submitBtn.disabled = !ready;
-  submitBtn.textContent = ready ? 'Подтвердить регистрацию' : 'Заполните форму выше';
+  submitBtn.textContent = ready ? 'Отправить заявку' : 'Заполните форму выше';
 }
 
 ['fullName', 'nickname', 'birthDate', 'phone', 'email'].forEach(id => {
@@ -159,13 +169,13 @@ submitBtn.addEventListener('click', async () => {
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
 
-  if (!fullName || !nickname || !birthDate || !state.nomination) {
-    errorEl.textContent = 'Заполните обязательные поля и выберите номинацию';
+  if (!fullName || !nickname || !birthDate || !state.gender || !state.nomination) {
+    errorEl.textContent = 'Заполните обязательные поля, укажите пол и выберите номинацию';
     return;
   }
 
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Создаём заявку…';
+  submitBtn.textContent = 'Отправляем…';
 
   try {
     const regRes = await fetch('/api/registrations', {
@@ -173,28 +183,19 @@ submitBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fullName, nickname, birthDate, phone, email,
+        gender: state.gender,
         nomination: state.nomination,
-        masterClasses: state.masterClasses,
-        currency: state.currency
+        masterClasses: state.masterClasses
       })
     });
     const regData = await regRes.json();
-    if (!regRes.ok) throw new Error(regData.error || 'Не удалось создать заявку');
+    if (!regRes.ok) throw new Error(regData.error || 'Не удалось отправить заявку');
 
-    const payEndpoint = state.currency === 'usd' ? '/api/pay/stripe' : '/api/pay/yookassa';
-    const payRes = await fetch(payEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ registrationId: regData.registrationId })
-    });
-    const payData = await payRes.json();
-    if (!payRes.ok) throw new Error(payData.error || 'Не удалось создать платёж');
-
-    window.location.href = payData.url;
+    window.location.href = `/success.html?reg=${regData.registrationId}`;
   } catch (err) {
     errorEl.textContent = err.message;
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Подтвердить регистрацию';
+    submitBtn.textContent = 'Отправить заявку';
   }
 });
 
