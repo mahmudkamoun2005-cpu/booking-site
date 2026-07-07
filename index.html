@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Запись онлайн</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <div class="brand">Запись<span class="brand__dot">.</span></div>
+    <div class="topbar__hint">Без регистрации — заполните форму и оплатите</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Онлайн-запись · свободные места сегодня</p>
+    <h1>Выберите время —<br>получите билет</h1>
+    <p class="hero__lede">Открытая запись для всех, аккаунт не нужен. Оплата картой любой страны.</p>
+  </section>
+
+  <section class="panel" id="step-service">
+    <h2 class="panel__title"><span class="num">01</span> Выберите услугу</h2>
+    <div class="services" id="services"></div>
+  </section>
+
+  <section class="panel" id="step-time">
+    <h2 class="panel__title"><span class="num">02</span> Выберите дату и время</h2>
+    <div class="datetime-row">
+      <input type="date" id="date-input" class="date-input">
+      <div class="slots" id="slots"><p class="hint">Сначала выберите дату</p></div>
+    </div>
+  </section>
+
+  <section class="panel" id="step-details">
+    <h2 class="panel__title"><span class="num">03</span> Ваши данные</h2>
+    <form id="booking-form" class="form">
+      <div class="field">
+        <label for="name">Имя</label>
+        <input id="name" name="name" required placeholder="Как к вам обращаться">
+      </div>
+      <div class="field">
+        <label for="phone">Телефон</label>
+        <input id="phone" name="phone" required placeholder="+7 900 000-00-00">
+      </div>
+      <div class="field">
+        <label for="email">Email (необязательно)</label>
+        <input id="email" name="email" type="email" placeholder="для чека и подтверждения">
+      </div>
+      <div class="field field--wide">
+        <label for="comment">Комментарий (необязательно)</label>
+        <textarea id="comment" name="comment" rows="2" placeholder="Пожелания к записи"></textarea>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel panel--ticket" id="step-pay">
+    <h2 class="panel__title"><span class="num">04</span> Оплата</h2>
+
+    <div class="ticket" id="ticket">
+      <div class="ticket__row">
+        <span>Услуга</span><strong id="t-service">—</strong>
+      </div>
+      <div class="ticket__row">
+        <span>Дата и время</span><strong id="t-datetime">—</strong>
+      </div>
+      <div class="ticket__perf"></div>
+      <div class="ticket__row ticket__row--total">
+        <span>К оплате</span><strong id="t-amount">—</strong>
+      </div>
+    </div>
+
+    <div class="currency-toggle">
+      <button type="button" class="curr-btn active" data-currency="rub">₽ Российская карта / Мир</button>
+      <button type="button" class="curr-btn" data-currency="usd">$ Иностранная карта</button>
+    </div>
+
+    <button id="pay-btn" class="btn-primary" disabled>Заполните форму выше</button>
+    <p class="error" id="error-msg"></p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">Заявка сохраняется после оплаты. Вопросы — свяжитесь с администратором.</div>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
