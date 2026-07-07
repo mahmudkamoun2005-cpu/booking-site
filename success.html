@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Регистрация принята</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@600&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap" style="padding-top:100px;text-align:center;">
+  <p class="eyebrow eyebrow--amber">Готово</p>
+  <h1 style="font-family:'Bebas Neue',sans-serif;font-size:56px;color:#fff;margin:0 0 16px;">РЕГИСТРАЦИЯ ПОДТВЕРЖДЕНА</h1>
+  <p class="body-text" style="margin:0 auto 32px;max-width:50ch;" id="status-text">Проверяем статус оплаты…</p>
+  <a href="/" class="btn-primary" style="display:inline-block;width:auto;">На главную</a>
+</main>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const regId = params.get('reg');
+  const statusText = document.getElementById('status-text');
+  if (regId) {
+    fetch(`/api/registrations/${regId}`).then(r => r.json()).then(reg => {
+      if (reg.payment_status === 'paid') {
+        statusText.textContent = `Оплата подтверждена. Ждём вас ${reg.nominationName}, 7–9 августа в Омске!`;
+      } else {
+        statusText.textContent = 'Платёж обрабатывается — подтверждение придёт в течение пары минут.';
+      }
+    }).catch(() => {
+      statusText.textContent = 'Не удалось проверить статус, но заявка сохранена.';
+    });
+  }
+</script>
+</body>
+</html>
