@@ -13,7 +13,7 @@
 <header class="topbar">
   <div class="wrap topbar__inner">
     <div class="brand">БРЕЙК <span class="brand__accent">НАВСЕГДА</span></div>
-    <a href="#reg" class="btn-nav">Записаться</a>
+    <a href="#reg" class="btn-nav">Оставить заявку</a>
   </div>
 </header>
 
@@ -33,7 +33,7 @@
       опытом и энергией.
     </p>
     <div class="hero__actions">
-      <a href="#reg" class="btn-primary">Зарегистрироваться</a>
+      <a href="#reg" class="btn-primary">Оставить заявку</a>
       <a href="#about" class="btn-outline">Подробнее</a>
     </div>
   </div>
@@ -122,6 +122,14 @@
         <span class="price-tier__value">3 500 ₽ <span class="price-tier__save">экономия 700 ₽</span></span>
       </div>
     </div>
+
+    <p class="pricing-note">
+      Эти цены действуют для тех, кто подал заявку заранее через сайт. Если вы регистрируетесь
+      прямо на месте, в день чемпионата, без предварительной заявки — стоимость каждой отдельной
+      услуги (участия в номинации или одного мастер-класса) будет выше на <strong>300 ₽</strong>,
+      а комплексных пакетов — выше на <strong>400 ₽</strong>. Оформите заявку сейчас, чтобы
+      зафиксировать текущую цену.
+    </p>
   </div>
 </section>
 
@@ -149,6 +157,14 @@
           <input id="phone" placeholder="+7 900 000-00-00">
         </div>
       </div>
+
+      <div class="field">
+        <label>Пол *</label>
+        <div class="option-grid" id="gender-options">
+          <div class="option-card" data-id="male"><div class="option-card__title">Мужской</div></div>
+          <div class="option-card" data-id="female"><div class="option-card__title">Женский</div></div>
+        </div>
+      </div>
       <div class="field">
         <label for="email">Email (необязательно)</label>
         <input id="email" type="email" placeholder="для чека и подтверждения">
@@ -166,13 +182,17 @@
       </div>
 
       <div class="total-bar">
-        <span>Итого к оплате</span>
+        <span>Сумма к оплате на месте</span>
         <strong id="total-amount">1 200 ₽</strong>
       </div>
 
-      <div class="currency-toggle">
-        <button type="button" class="curr-btn active" data-currency="rub">₽ Российская карта / Мир</button>
-        <button type="button" class="curr-btn" data-currency="usd">$ Иностранная карта</button>
+      <div class="payment-note">
+        <div class="payment-note__title">💳 Оплата на месте по реквизитам</div>
+        <p class="payment-note__text">
+          Онлайн-оплата не требуется. Заявка фиксирует ваше место и итоговую сумму — оплатить
+          нужно будет на месте проведения чемпионата, по реквизитам организаторов, в день
+          мероприятия.
+        </p>
       </div>
 
       <button type="button" id="submit-btn" class="btn-primary btn-full" disabled>Заполните форму выше</button>
