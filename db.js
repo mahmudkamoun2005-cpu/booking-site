@@ -1,27 +1,23 @@
-const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'data', 'bookings.db'));
-db.pragma('journal_mode = WAL');
+const DATA_DIR = path.join(__dirname, 'data');
+const DB_FILE = path.join(DATA_DIR, 'bookings.json');
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS bookings (
-    id TEXT PRIMARY KEY,
-    service TEXT NOT NULL,
-    date TEXT NOT NULL,
-    time TEXT NOT NULL,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    email TEXT,
-    comment TEXT,
-    amount INTEGER NOT NULL,
-    currency TEXT NOT NULL,
-    payment_provider TEXT,
-    payment_id TEXT,
-    payment_status TEXT NOT NULL DEFAULT 'pending',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, '[]', 'utf8');
+
+function readAll() {
+  try {
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function writeAll(bookings) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(bookings, null, 2), 'utf8');
+}
 
 // Простой список услуг — отредактируйте под свой бизнес
 const SERVICES = [
@@ -41,10 +37,9 @@ function getService(id) {
 }
 
 function getBookedTimes(date) {
-  const rows = db.prepare(
-    `SELECT time FROM bookings WHERE date = ? AND payment_status != 'cancelled'`
-  ).all(date);
-  return rows.map(r => r.time);
+  return readAll()
+    .filter(b => b.date === date && b.payment_status !== 'cancelled')
+    .map(b => b.time);
 }
 
 function getAvailableSlots(date) {
@@ -58,33 +53,46 @@ function getAvailableSlots(date) {
 }
 
 function createBooking(booking) {
-  db.prepare(`
-    INSERT INTO bookings (id, service, date, time, name, phone, email, comment, amount, currency, payment_status)
-    VALUES (@id, @service, @date, @time, @name, @phone, @email, @comment, @amount, @currency, 'pending')
-  `).run(booking);
+  const bookings = readAll();
+  bookings.push({
+    ...booking,
+    payment_provider: null,
+    payment_id: null,
+    payment_status: 'pending',
+    created_at: new Date().toISOString()
+  });
+  writeAll(bookings);
   return booking;
 }
 
 function getBooking(id) {
-  return db.prepare(`SELECT * FROM bookings WHERE id = ?`).get(id);
+  return readAll().find(b => b.id === id);
 }
 
 function setBookingPayment(id, provider, paymentId, status) {
-  db.prepare(`
-    UPDATE bookings SET payment_provider = ?, payment_id = ?, payment_status = ? WHERE id = ?
-  `).run(provider, paymentId, status, id);
+  const bookings = readAll();
+  const b = bookings.find(x => x.id === id);
+  if (!b) return;
+  b.payment_provider = provider;
+  b.payment_id = paymentId;
+  b.payment_status = status;
+  writeAll(bookings);
 }
 
 function setBookingStatus(id, status) {
-  db.prepare(`UPDATE bookings SET payment_status = ? WHERE id = ?`).run(status, id);
+  const bookings = readAll();
+  const b = bookings.find(x => x.id === id);
+  if (!b) return;
+  b.payment_status = status;
+  writeAll(bookings);
 }
 
 function listBookings() {
-  return db.prepare(`SELECT * FROM bookings ORDER BY date DESC, time DESC`).all();
+  return readAll().sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1));
 }
 
 function findByPaymentId(paymentId) {
-  return db.prepare(`SELECT * FROM bookings WHERE payment_id = ?`).get(paymentId);
+  return readAll().find(b => b.payment_id === paymentId);
 }
 
 module.exports = {
