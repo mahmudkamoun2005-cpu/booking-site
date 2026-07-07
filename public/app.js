@@ -15,6 +15,44 @@ const totalAmountEl = document.getElementById('total-amount');
 
 const PRIZE_TEXT = '🏆 Главный приз: поездка в Словению + TOP16/32 на WKB 2027';
 
+function selectNomination(id, auto) {
+  nomOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  const card = nomOptions.querySelector(`.option-card[data-id="${id}"]`);
+  if (card) card.classList.add('selected');
+  state.nomination = id;
+  const hint = document.getElementById('nomination-hint');
+  if (hint) {
+    hint.textContent = auto
+      ? 'Категория подобрана автоматически по дате рождения — при необходимости выберите другую вручную'
+      : '';
+  }
+  updateTotal();
+  checkReady();
+}
+
+function ageAtEvent(birthDateStr) {
+  const birth = new Date(birthDateStr);
+  const ref = new Date('2026-08-07'); // первый день чемпионата
+  let age = ref.getFullYear() - birth.getFullYear();
+  const notYetBirthday = (ref.getMonth() < birth.getMonth()) ||
+    (ref.getMonth() === birth.getMonth() && ref.getDate() < birth.getDate());
+  if (notYetBirthday) age -= 1;
+  return age;
+}
+
+function autoDetectNomination() {
+  const birthDateVal = document.getElementById('birthDate').value;
+  if (!birthDateVal) return;
+  const age = ageAtEvent(birthDateVal);
+  let autoId = null;
+  if (age >= 7 && age <= 10) autoId = '7-10';
+  else if (age >= 11 && age <= 13) autoId = '11-13';
+  else if (age >= 14 && age <= 17) autoId = '14-17';
+  if (autoId) selectNomination(autoId, true);
+}
+
+document.getElementById('birthDate').addEventListener('change', autoDetectNomination);
+
 async function loadNominations() {
   const res = await fetch('/api/nominations');
   nominations = await res.json();
@@ -35,13 +73,7 @@ async function loadNominations() {
     </div>
   `).join('');
   nomOptions.querySelectorAll('.option-card').forEach(card => {
-    card.addEventListener('click', () => {
-      nomOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      state.nomination = card.dataset.id;
-      updateTotal();
-      checkReady();
-    });
+    card.addEventListener('click', () => selectNomination(card.dataset.id, false));
   });
 }
 
