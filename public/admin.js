@@ -38,9 +38,12 @@ async function loadRegistrations() {
   bodyEl.innerHTML = regs.map(r => `
     <tr>
       <td>${new Date(r.created_at).toLocaleDateString('ru-RU')}</td>
-      <td>${r.fullName}<br><span style="color:var(--text-dim);font-size:12px;">${r.nickname}</span></td>
-      <td>${r.gender === 'female' ? 'Ж' : 'М'}</td>
-      <td>${r.nominationName}</td>
+      <td>${r.type === 'team' ? 'Команда' : 'Личная'}</td>
+      <td>${r.type === 'team'
+        ? `${r.teamName}<br><span style="color:var(--text-dim);font-size:12px;">капитан: ${r.captainName}</span>`
+        : `${r.fullName}<br><span style="color:var(--text-dim);font-size:12px;">${r.nickname}</span>`}</td>
+      <td>${r.type === 'team' ? '—' : (r.gender === 'female' ? 'Ж' : 'М')}</td>
+      <td>${r.nominationName || 'Только МК'}</td>
       <td>${r.masterClasses && r.masterClasses.length ? r.masterClasses.length : '—'}</td>
       <td>${r.phone || '—'}</td>
       <td>${r.amount} ₽</td>
@@ -50,7 +53,7 @@ async function loadRegistrations() {
         <button class="action-btn action-btn--cancel" data-id="${r.id}" data-status="cancelled" ${r.status === 'cancelled' ? 'disabled' : ''}>Отменить</button>
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="9">Заявок пока нет</td></tr>';
+  `).join('') || '<tr><td colspan="10">Заявок пока нет</td></tr>';
 
   bodyEl.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => setStatus(btn.dataset.id, btn.dataset.status, btn));
