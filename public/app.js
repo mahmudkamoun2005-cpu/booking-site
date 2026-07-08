@@ -251,17 +251,28 @@ submitBtn.addEventListener('click', async () => {
   }
 });
 
-// ---------- Командная заявка 4×4 ----------
+// ---------- Командная заявка ----------
 
 const teamSubmitBtn = document.getElementById('submit-team-btn');
 const teamErrorEl = document.getElementById('team-error-msg');
+const memberCountOptions = document.getElementById('member-count-options');
+let teamMemberCount = null;
+
+memberCountOptions.querySelectorAll('.option-card').forEach(card => {
+  card.addEventListener('click', () => {
+    memberCountOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    teamMemberCount = Number(card.dataset.id);
+    checkTeamReady();
+  });
+});
 
 function checkTeamReady() {
   const teamName = document.getElementById('teamName').value.trim();
   const captainName = document.getElementById('captainName').value.trim();
   const teamPhone = document.getElementById('teamPhone').value.trim();
   const teamEmail = document.getElementById('teamEmail').value.trim();
-  const ready = teamName && captainName && teamPhone && teamEmail;
+  const ready = teamName && captainName && teamPhone && teamEmail && teamMemberCount;
   teamSubmitBtn.disabled = !ready;
   teamSubmitBtn.textContent = ready ? 'Отправить заявку команды' : 'Заполните форму выше';
 }
@@ -284,7 +295,7 @@ teamSubmitBtn.addEventListener('click', async () => {
     const regRes = await fetch('/api/registrations/team', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teamName, captainName, phone, email })
+      body: JSON.stringify({ teamName, captainName, phone, email, memberCount: teamMemberCount })
     });
     const regData = await regRes.json();
     if (!regRes.ok) throw new Error(regData.error || 'Не удалось отправить заявку');
