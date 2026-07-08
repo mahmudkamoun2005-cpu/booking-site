@@ -24,7 +24,7 @@
   if (regId) {
     fetch(`/api/registrations/${regId}`).then(r => r.json()).then(reg => {
       const label = reg.type === 'team'
-        ? `Команда «${reg.teamName}» · номинация 4×4`
+        ? `Команда «${reg.teamName}» (${reg.memberCount} чел.)`
         : (reg.nominationName || 'Только мастер-классы');
       statusText.textContent = `${label} · сумма к оплате на месте: ${reg.amount} ₽. Ждём вас 7–9 августа в Омске!`;
     }).catch(() => {
