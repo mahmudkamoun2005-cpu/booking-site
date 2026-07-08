@@ -34,17 +34,23 @@ app.get('/api/pricing', (req, res) => {
   res.json(db.getPricingInfo());
 });
 
-app.post('/api/registrations', (req, res) => {
-  const { fullName, nickname, birthDate, phone, email, gender, nomination, masterClasses } = req.body;
+// Определение номинации по дате рождения и полу — клиент это значение не выбирает сам
+app.post('/api/detect-nomination', (req, res) => {
+  const { birthDate, gender } = req.body;
+  const nom = db.detectNomination(birthDate, gender);
+  res.json({ nomination: nom });
+});
 
-  if (!fullName || !nickname || !birthDate || !gender || !nomination) {
+// Личная заявка
+app.post('/api/registrations', (req, res) => {
+  const { fullName, nickname, birthDate, phone, email, gender, participatesInNomination, masterClasses } = req.body;
+
+  if (!fullName || !nickname || !birthDate || !gender) {
     return res.status(400).json({ error: 'Заполните обязательные поля' });
   }
   if (!['male', 'female'].includes(gender)) {
     return res.status(400).json({ error: 'Некорректно указан пол' });
   }
-  const nom = db.getNomination(nomination);
-  if (!nom) return res.status(400).json({ error: 'Неизвестная номинация' });
 
   const mcIds = Array.isArray(masterClasses) ? masterClasses.slice(0, 2) : [];
   const validMc = db.getMasterClasses().map(m => m.id);
@@ -52,25 +58,60 @@ app.post('/api/registrations', (req, res) => {
     return res.status(400).json({ error: 'Неизвестный мастер-класс' });
   }
 
-  const amount = db.calcAmount(mcIds);
+  let nom = null;
+  if (participatesInNomination) {
+    nom = db.detectNomination(birthDate, gender);
+    if (!nom) {
+      return res.status(400).json({ error: 'Возраст не подходит ни под одну номинацию. Свяжитесь с организаторами.' });
+    }
+  }
+
+  const amount = db.calcIndividualAmount(!!participatesInNomination, mcIds.length);
+  if (amount === null) {
+    return res.status(400).json({ error: 'Выберите номинацию или хотя бы один мастер-класс' });
+  }
 
   const registration = {
     id: uuidv4(),
+    type: 'individual',
     fullName,
     nickname,
     birthDate,
     gender,
     phone: phone || '',
     email: email || '',
-    nomination: nom.id,
-    nominationName: nom.name,
+    participatesInNomination: !!participatesInNomination,
+    nomination: nom ? nom.id : null,
+    nominationName: nom ? nom.name : null,
     masterClasses: mcIds,
-    amount,
-    currency: 'rub'
+    amount
   };
   db.createRegistration(registration);
   notifyRegistration(registration).catch(() => {});
   res.json({ registrationId: registration.id, amount });
+});
+
+// Командная заявка 4×4
+app.post('/api/registrations/team', (req, res) => {
+  const { teamName, captainName, phone, email } = req.body;
+  if (!teamName || !captainName || !phone) {
+    return res.status(400).json({ error: 'Заполните обязательные поля' });
+  }
+
+  const registration = {
+    id: uuidv4(),
+    type: 'team',
+    teamName,
+    captainName,
+    phone,
+    email: email || '',
+    nomination: '4x4',
+    nominationName: '4×4 (команда)',
+    amount: db.getTeamFee()
+  };
+  db.createRegistration(registration);
+  notifyRegistration(registration).catch(() => {});
+  res.json({ registrationId: registration.id, amount: registration.amount });
 });
 
 app.get('/api/registrations/:id', (req, res) => {
