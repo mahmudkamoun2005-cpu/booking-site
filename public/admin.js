@@ -40,7 +40,7 @@ async function loadRegistrations() {
       <td>${new Date(r.created_at).toLocaleDateString('ru-RU')}</td>
       <td>${r.type === 'team' ? 'Команда' : 'Личная'}</td>
       <td>${r.type === 'team'
-        ? `${r.teamName}<br><span style="color:var(--text-dim);font-size:12px;">капитан: ${r.captainName}</span>`
+        ? `${r.teamName}<br><span style="color:var(--text-dim);font-size:12px;">капитан: ${r.captainName} · ${r.memberCount} чел.</span>`
         : `${r.fullName}<br><span style="color:var(--text-dim);font-size:12px;">${r.nickname}</span>`}</td>
       <td>${r.type === 'team' ? '—' : (r.gender === 'female' ? 'Ж' : 'М')}</td>
       <td>${r.nominationName || 'Только МК'}</td>
