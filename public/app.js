@@ -1,45 +1,67 @@
 let nominations = [];
 let masterClasses = [];
 let state = {
-  nomination: null,
+  gender: null,
+  participation: null, // 'with-nomination' | 'mc-only'
   masterClasses: [],
-  gender: null
+  resolvedNomination: null // объект номинации или null
 };
 
 const nomGridSection = document.getElementById('nom-grid');
-const nomOptions = document.getElementById('nomination-options');
-const mcOptions = document.getElementById('mc-options');
 const genderOptions = document.getElementById('gender-options');
+const participationOptions = document.getElementById('participation-options');
+const nominationBlock = document.getElementById('nomination-block');
+const nominationDisplay = document.getElementById('nomination-display');
+const mcOptions = document.getElementById('mc-options');
+const mcHint = document.getElementById('mc-required-hint');
 const submitBtn = document.getElementById('submit-btn');
 const errorEl = document.getElementById('error-msg');
 const totalAmountEl = document.getElementById('total-amount');
 
 const PRIZE_TEXT = '🏆 Главный приз: поездка в Словению + TOP16/32 на WKB 2027';
 
+// ---------- Переключатель режима: личная / командная заявка ----------
+
+const individualForm = document.getElementById('individual-form');
+const teamForm = document.getElementById('team-form');
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    individualForm.style.display = mode === 'individual' ? 'block' : 'none';
+    teamForm.style.display = mode === 'team' ? 'block' : 'none';
+  });
+});
+
+// ---------- Пол ----------
+
 genderOptions.querySelectorAll('.option-card').forEach(card => {
   card.addEventListener('click', () => {
     genderOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
     state.gender = card.dataset.id;
-    autoDetectNomination();
+    resolveNomination();
     checkReady();
   });
 });
 
-function selectNomination(id, auto) {
-  nomOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-  const card = nomOptions.querySelector(`.option-card[data-id="${id}"]`);
-  if (card) card.classList.add('selected');
-  state.nomination = id;
-  const hint = document.getElementById('nomination-hint');
-  if (hint) {
-    hint.textContent = auto
-      ? 'Категория подобрана автоматически по дате рождения — при необходимости выберите другую вручную'
-      : '';
-  }
-  updateTotal();
-  checkReady();
-}
+// ---------- Формат участия ----------
+
+participationOptions.querySelectorAll('.option-card').forEach(card => {
+  card.addEventListener('click', () => {
+    participationOptions.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.participation = card.dataset.id;
+    nominationBlock.style.display = state.participation === 'mc-only' ? 'none' : 'block';
+    mcHint.textContent = state.participation === 'mc-only' ? '(выберите хотя бы один)' : '(необязательно)';
+    resolveNomination();
+    updateTotal();
+    checkReady();
+  });
+});
+
+// ---------- Возраст ----------
 
 function ageAtEvent(birthDateStr) {
   const birth = new Date(birthDateStr);
@@ -51,35 +73,61 @@ function ageAtEvent(birthDateStr) {
   return age;
 }
 
-function autoDetectNomination() {
-  const birthDateVal = document.getElementById('birthDate').value;
-  if (!birthDateVal) return;
-  const age = ageAtEvent(birthDateVal);
-  const hint = document.getElementById('nomination-hint');
+// ---------- Автоматический подбор номинации (клиент её не выбирает) ----------
 
-  let autoId = null;
+function localDetectNomination(birthDateStr, gender) {
+  if (!birthDateStr || !gender) return null;
+  const age = ageAtEvent(birthDateStr);
+  const find = id => nominations.find(n => n.id === id);
 
-  if (age >= 18) {
-    // Old to the new — отдельная взрослая номинация, доступна только с 18 лет
-    autoId = 'old2new';
-  } else if (age >= 16 && age <= 17) {
-    // 16-17 лет — общая категория независимо от пола
-    autoId = '14-17';
-  } else if (age >= 14 && age <= 15) {
-    // 14-15 лет — девочки в свою номинацию, мальчики к общей 14-17
-    if (state.gender === 'female') autoId = 'girls-15';
-    else if (state.gender === 'male') autoId = '14-17';
-    else if (hint) hint.textContent = 'Укажите пол, чтобы подобрать номинацию автоматически';
-  } else if (age >= 11 && age <= 13) {
-    autoId = '11-13';
-  } else if (age >= 7 && age <= 10) {
-    autoId = '7-10';
+  if (age >= 18) return find('old2new');
+  if (gender === 'female') {
+    if (age <= 15) return find('girls-15');
+    if (age >= 16 && age <= 17) return find('14-17');
+    return null;
   }
-
-  if (autoId) selectNomination(autoId, true);
+  if (gender === 'male') {
+    if (age >= 7 && age <= 10) return find('7-10');
+    if (age >= 11 && age <= 13) return find('11-13');
+    if (age >= 14 && age <= 17) return find('14-17');
+    return null;
+  }
+  return null;
 }
 
-document.getElementById('birthDate').addEventListener('change', autoDetectNomination);
+function resolveNomination() {
+  if (state.participation === 'mc-only') {
+    state.resolvedNomination = null;
+    updateTotal();
+    checkReady();
+    return;
+  }
+  const birthDateVal = document.getElementById('birthDate').value;
+  if (!birthDateVal || !state.gender) {
+    nominationDisplay.textContent = 'Укажите дату рождения и пол';
+    nominationDisplay.className = 'nomination-display';
+    state.resolvedNomination = null;
+    updateTotal();
+    checkReady();
+    return;
+  }
+  const nom = localDetectNomination(birthDateVal, state.gender);
+  if (nom) {
+    nominationDisplay.textContent = nom.name;
+    nominationDisplay.className = 'nomination-display resolved';
+    state.resolvedNomination = nom;
+  } else {
+    nominationDisplay.textContent = 'Возраст не подходит ни под одну номинацию — свяжитесь с организаторами';
+    nominationDisplay.className = 'nomination-display error';
+    state.resolvedNomination = null;
+  }
+  updateTotal();
+  checkReady();
+}
+
+document.getElementById('birthDate').addEventListener('change', resolveNomination);
+
+// ---------- Загрузка справочников ----------
 
 async function loadNominations() {
   const res = await fetch('/api/nominations');
@@ -92,15 +140,6 @@ async function loadNominations() {
       ${n.id !== 'old2new' ? `<div class="nom-card__prize">${PRIZE_TEXT}</div>` : ''}
     </div>
   `).join('');
-
-  nomOptions.innerHTML = nominations.map(n => `
-    <div class="option-card" data-id="${n.id}">
-      <div class="option-card__title">${n.name}</div>
-    </div>
-  `).join('');
-  nomOptions.querySelectorAll('.option-card').forEach(card => {
-    card.addEventListener('click', () => selectNomination(card.dataset.id, false));
-  });
 }
 
 function formatNomTitle(n) {
@@ -137,22 +176,39 @@ async function loadMasterClasses() {
   });
 }
 
+// ---------- Расчёт суммы ----------
+
 function calcAmount() {
   const count = Math.min(state.masterClasses.length, 2);
-  if (count === 0) return 1200;
-  if (count === 1) return 2700;
-  return 3500;
+  const withNomination = state.participation === 'with-nomination';
+  if (withNomination) {
+    if (count === 0) return 1200;
+    if (count === 1) return 2700;
+    return 3500;
+  }
+  if (count === 1) return 1500;
+  if (count === 2) return 2500;
+  return 0;
 }
 
 function updateTotal() {
   totalAmountEl.textContent = `${calcAmount().toLocaleString('ru-RU')} ₽`;
 }
 
+// ---------- Готовность формы ----------
+
 function checkReady() {
   const fullName = document.getElementById('fullName').value.trim();
   const nickname = document.getElementById('nickname').value.trim();
   const birthDate = document.getElementById('birthDate').value;
-  const ready = fullName && nickname && birthDate && state.gender && state.nomination;
+
+  let ready = fullName && nickname && birthDate && state.gender && state.participation;
+  if (state.participation === 'with-nomination') {
+    ready = ready && !!state.resolvedNomination;
+  } else if (state.participation === 'mc-only') {
+    ready = ready && state.masterClasses.length >= 1;
+  }
+
   submitBtn.disabled = !ready;
   submitBtn.textContent = ready ? 'Отправить заявку' : 'Заполните форму выше';
 }
@@ -169,11 +225,6 @@ submitBtn.addEventListener('click', async () => {
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
 
-  if (!fullName || !nickname || !birthDate || !state.gender || !state.nomination) {
-    errorEl.textContent = 'Заполните обязательные поля, укажите пол и выберите номинацию';
-    return;
-  }
-
   submitBtn.disabled = true;
   submitBtn.textContent = 'Отправляем…';
 
@@ -184,7 +235,7 @@ submitBtn.addEventListener('click', async () => {
       body: JSON.stringify({
         fullName, nickname, birthDate, phone, email,
         gender: state.gender,
-        nomination: state.nomination,
+        participatesInNomination: state.participation === 'with-nomination',
         masterClasses: state.masterClasses
       })
     });
@@ -196,6 +247,51 @@ submitBtn.addEventListener('click', async () => {
     errorEl.textContent = err.message;
     submitBtn.disabled = false;
     submitBtn.textContent = 'Отправить заявку';
+  }
+});
+
+// ---------- Командная заявка 4×4 ----------
+
+const teamSubmitBtn = document.getElementById('submit-team-btn');
+const teamErrorEl = document.getElementById('team-error-msg');
+
+function checkTeamReady() {
+  const teamName = document.getElementById('teamName').value.trim();
+  const captainName = document.getElementById('captainName').value.trim();
+  const teamPhone = document.getElementById('teamPhone').value.trim();
+  const ready = teamName && captainName && teamPhone;
+  teamSubmitBtn.disabled = !ready;
+  teamSubmitBtn.textContent = ready ? 'Отправить заявку команды' : 'Заполните форму выше';
+}
+
+['teamName', 'captainName', 'teamPhone', 'teamEmail'].forEach(id => {
+  document.getElementById(id).addEventListener('input', checkTeamReady);
+});
+
+teamSubmitBtn.addEventListener('click', async () => {
+  teamErrorEl.textContent = '';
+  const teamName = document.getElementById('teamName').value.trim();
+  const captainName = document.getElementById('captainName').value.trim();
+  const phone = document.getElementById('teamPhone').value.trim();
+  const email = document.getElementById('teamEmail').value.trim();
+
+  teamSubmitBtn.disabled = true;
+  teamSubmitBtn.textContent = 'Отправляем…';
+
+  try {
+    const regRes = await fetch('/api/registrations/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamName, captainName, phone, email })
+    });
+    const regData = await regRes.json();
+    if (!regRes.ok) throw new Error(regData.error || 'Не удалось отправить заявку');
+
+    window.location.href = `/success.html?reg=${regData.registrationId}`;
+  } catch (err) {
+    teamErrorEl.textContent = err.message;
+    teamSubmitBtn.disabled = false;
+    teamSubmitBtn.textContent = 'Отправить заявку команды';
   }
 });
 
