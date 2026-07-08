@@ -89,6 +89,11 @@
     <p class="eyebrow">Номинации</p>
     <h2 class="section-title">Сетка баттлов</h2>
     <div class="nom-grid" id="nom-grid"></div>
+    <div class="nom-card nom-card--team">
+      <div class="nom-card__label">Командная · фиксированная цена</div>
+      <div class="nom-card__title">4×4</div>
+      <div class="nom-card__prize">Регистрация команды — 4 000 ₽</div>
+    </div>
   </div>
 </section>
 
@@ -124,11 +129,12 @@
     </div>
 
     <p class="pricing-note">
-      Эти цены действуют для тех, кто подал заявку заранее через сайт. Если вы регистрируетесь
-      прямо на месте, в день чемпионата, без предварительной заявки — стоимость каждой отдельной
-      услуги (участия в номинации или одного мастер-класса) будет выше на <strong>300 ₽</strong>,
-      а комплексных пакетов — выше на <strong>400 ₽</strong>. Оформите заявку сейчас, чтобы
-      зафиксировать текущую цену.
+      Стоимость каждой отдельной услуги — участия в номинации (1 200 ₽) или одного мастер-класса
+      (1 500 ₽) — одинакова и для заявок, поданных заранее через сайт, и для тех, кто регистрируется
+      на месте в день чемпионата. А вот <strong>выгодные пакетные цены</strong> — 2 мастер-класса
+      за 2 500 ₽ или 2 мастер-класса вместе с номинацией за 3 500 ₽ — доступны
+      <strong> только тем, кто подал заявку заранее через сайт</strong>. Оформите заявку сейчас,
+      чтобы собрать полный пакет со скидкой.
     </p>
   </div>
 </section>
@@ -138,7 +144,13 @@
     <p class="eyebrow eyebrow--amber">Регистрация</p>
     <h2 class="section-title">Заяви о себе</h2>
 
-    <form class="reg-form" id="reg-form">
+    <div class="reg-mode-toggle">
+      <button type="button" class="mode-btn active" data-mode="individual">Личная заявка</button>
+      <button type="button" class="mode-btn" data-mode="team">Команда 4×4</button>
+    </div>
+
+    <!-- Личная заявка -->
+    <form class="reg-form" id="individual-form">
       <div class="field">
         <label for="fullName">ФИО *</label>
         <input id="fullName" required placeholder="Иванов Иван Иванович">
@@ -171,13 +183,20 @@
       </div>
 
       <div class="field">
-        <label>Номинация *</label>
-        <div class="option-grid" id="nomination-options"></div>
-        <p class="field-hint" id="nomination-hint"></p>
+        <label>Формат участия *</label>
+        <div class="option-grid" id="participation-options">
+          <div class="option-card" data-id="with-nomination"><div class="option-card__title">Номинация + мастер-классы</div></div>
+          <div class="option-card" data-id="mc-only"><div class="option-card__title">Только мастер-классы</div></div>
+        </div>
+      </div>
+
+      <div class="field" id="nomination-block">
+        <label>Номинация — подбирается автоматически</label>
+        <div class="nomination-display" id="nomination-display">Укажите дату рождения и пол</div>
       </div>
 
       <div class="field">
-        <label>Мастер-классы (необязательно)</label>
+        <label>Мастер-классы <span id="mc-required-hint" class="field-hint-inline"></span></label>
         <div class="option-grid" id="mc-options"></div>
       </div>
 
@@ -189,14 +208,51 @@
       <div class="payment-note">
         <div class="payment-note__title">💳 Оплата на месте по реквизитам</div>
         <p class="payment-note__text">
-          Онлайн-оплата не требуется. Заявка фиксирует ваше место и итоговую сумму — оплатить
-          нужно будет на месте проведения чемпионата, по реквизитам организаторов, в день
-          мероприятия.
+          Онлайн-оплата не требуется. Заявка фиксирует итоговую сумму — оплатить нужно будет
+          на месте проведения чемпионата, по реквизитам организаторов, в день мероприятия.
         </p>
       </div>
 
       <button type="button" id="submit-btn" class="btn-primary btn-full" disabled>Заполните форму выше</button>
       <p class="error" id="error-msg"></p>
+    </form>
+
+    <!-- Командная заявка 4×4 -->
+    <form class="reg-form" id="team-form" style="display:none;">
+      <div class="field">
+        <label for="teamName">Название команды *</label>
+        <input id="teamName" required placeholder="Например, Predatorz Crew">
+      </div>
+      <div class="field">
+        <label for="captainName">Капитан команды (ФИО) *</label>
+        <input id="captainName" required placeholder="Иванов Иван Иванович">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="teamPhone">Телефон *</label>
+          <input id="teamPhone" required placeholder="+7 900 000-00-00">
+        </div>
+        <div class="field">
+          <label for="teamEmail">Email (необязательно)</label>
+          <input id="teamEmail" type="email" placeholder="для подтверждения">
+        </div>
+      </div>
+
+      <div class="total-bar">
+        <span>Стоимость регистрации команды</span>
+        <strong>4 000 ₽</strong>
+      </div>
+
+      <div class="payment-note">
+        <div class="payment-note__title">💳 Оплата на месте по реквизитам</div>
+        <p class="payment-note__text">
+          Онлайн-оплата не требуется. Заявка фиксирует место команды в сетке — оплатить нужно
+          будет на месте проведения чемпионата, по реквизитам организаторов.
+        </p>
+      </div>
+
+      <button type="button" id="submit-team-btn" class="btn-primary btn-full" disabled>Заполните форму выше</button>
+      <p class="error" id="team-error-msg"></p>
     </form>
   </div>
 </section>
