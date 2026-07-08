@@ -12,7 +12,7 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
 
 function formatMessage(reg) {
   if (reg.type === 'team') {
-    return `Заявка команды «${reg.teamName}» на номинацию 4×4 принята. К оплате на месте: ${reg.amount} ₽. До встречи 7–9 августа в Омске!`;
+    return `Заявка команды «${reg.teamName}» (${reg.memberCount} чел.) принята. К оплате на месте: ${reg.amount} ₽. До встречи 7–9 августа в Омске!`;
   }
   const mc = reg.masterClasses && reg.masterClasses.length
     ? ` + мастер-классы (${reg.masterClasses.length})`
@@ -26,7 +26,8 @@ async function sendEmail(reg) {
   if (!reg.email) return { skipped: true, reason: 'no email' };
   try {
     const who = reg.type === 'team'
-      ? `<p><strong>Команда:</strong> ${reg.teamName} (капитан ${reg.captainName})</p>`
+      ? `<p><strong>Команда:</strong> ${reg.teamName} (капитан ${reg.captainName})</p>
+         <p><strong>Количество участников:</strong> ${reg.memberCount}</p>`
       : `<p><strong>Участник:</strong> ${reg.fullName} (${reg.nickname})</p>
          <p><strong>Номинация:</strong> ${reg.nominationName || 'только мастер-классы'}</p>`;
     await mailer.sendMail({
