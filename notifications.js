@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const fetch = require('node-fetch');
 
 let mailer = null;
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -23,7 +22,8 @@ function formatMessage(reg) {
 }
 
 async function sendEmail(reg) {
-  if (!mailer || !reg.email) return { skipped: true, reason: 'email not configured or missing' };
+  if (!mailer) return { skipped: true, reason: 'SMTP не настроен на сервере' };
+  if (!reg.email) return { skipped: true, reason: 'no email' };
   try {
     const who = reg.type === 'team'
       ? `<p><strong>Команда:</strong> ${reg.teamName} (капитан ${reg.captainName})</p>`
@@ -49,24 +49,9 @@ async function sendEmail(reg) {
   }
 }
 
-async function sendSms(reg) {
-  if (!reg.phone) return { skipped: true, reason: 'no phone' };
-  const apiId = process.env.SMS_RU_API_ID;
-  if (!apiId) return { skipped: true, reason: 'SMS.ru not configured' };
-  try {
-    const url = `https://sms.ru/sms/send?api_id=${apiId}&to=${encodeURIComponent(reg.phone)}&msg=${encodeURIComponent(formatMessage(reg))}&json=1`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.status !== 'OK') return { sent: false, channel: 'sms.ru', error: data.status_text || 'unknown error' };
-    return { sent: true, channel: 'sms.ru' };
-  } catch (err) {
-    return { sent: false, channel: 'sms.ru', error: err.message };
-  }
-}
-
 async function notifyRegistration(reg) {
-  const [emailResult, smsResult] = await Promise.all([sendEmail(reg), sendSms(reg)]);
-  return { email: emailResult, sms: smsResult };
+  const emailResult = await sendEmail(reg);
+  return { email: emailResult };
 }
 
 module.exports = { notifyRegistration };
