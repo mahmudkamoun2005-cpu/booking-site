@@ -201,8 +201,9 @@ function checkReady() {
   const fullName = document.getElementById('fullName').value.trim();
   const nickname = document.getElementById('nickname').value.trim();
   const birthDate = document.getElementById('birthDate').value;
+  const email = document.getElementById('email').value.trim();
 
-  let ready = fullName && nickname && birthDate && state.gender && state.participation;
+  let ready = fullName && nickname && birthDate && email && state.gender && state.participation;
   if (state.participation === 'with-nomination') {
     ready = ready && !!state.resolvedNomination;
   } else if (state.participation === 'mc-only') {
@@ -259,7 +260,8 @@ function checkTeamReady() {
   const teamName = document.getElementById('teamName').value.trim();
   const captainName = document.getElementById('captainName').value.trim();
   const teamPhone = document.getElementById('teamPhone').value.trim();
-  const ready = teamName && captainName && teamPhone;
+  const teamEmail = document.getElementById('teamEmail').value.trim();
+  const ready = teamName && captainName && teamPhone && teamEmail;
   teamSubmitBtn.disabled = !ready;
   teamSubmitBtn.textContent = ready ? 'Отправить заявку команды' : 'Заполните форму выше';
 }
