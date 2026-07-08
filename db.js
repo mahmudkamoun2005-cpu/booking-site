@@ -64,7 +64,7 @@ function getPricingInfo() {
     twoMcPackage: TWO_MC_PACKAGE,
     oneMcWithNomination: ONE_MC_WITH_NOMINATION,
     twoMcWithNomination: TWO_MC_WITH_NOMINATION,
-    team4x4Fee: TEAM_4X4_FEE
+    teamFee: TEAM_4X4_FEE
   };
 }
 
