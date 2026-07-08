@@ -91,11 +91,15 @@ app.post('/api/registrations', (req, res) => {
   res.json({ registrationId: registration.id, amount });
 });
 
-// Командная заявка 4×4
+// Командная заявка
 app.post('/api/registrations/team', (req, res) => {
-  const { teamName, captainName, phone, email } = req.body;
+  const { teamName, captainName, phone, email, memberCount } = req.body;
   if (!teamName || !captainName || !phone || !email) {
     return res.status(400).json({ error: 'Заполните обязательные поля, включая email' });
+  }
+  const count = Number(memberCount);
+  if (!Number.isInteger(count) || count < 3 || count > 5) {
+    return res.status(400).json({ error: 'В команде должно быть от 3 до 5 человек' });
   }
 
   const registration = {
@@ -105,8 +109,9 @@ app.post('/api/registrations/team', (req, res) => {
     captainName,
     phone,
     email: email || '',
-    nomination: '4x4',
-    nominationName: '4×4 (команда)',
+    memberCount: count,
+    nomination: 'team',
+    nominationName: `Команда (${count} чел.)`,
     amount: db.getTeamFee()
   };
   db.createRegistration(registration);
