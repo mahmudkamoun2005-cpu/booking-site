@@ -45,8 +45,8 @@ app.post('/api/detect-nomination', (req, res) => {
 app.post('/api/registrations', (req, res) => {
   const { fullName, nickname, birthDate, phone, email, gender, participatesInNomination, masterClasses } = req.body;
 
-  if (!fullName || !nickname || !birthDate || !gender) {
-    return res.status(400).json({ error: 'Заполните обязательные поля' });
+  if (!fullName || !nickname || !birthDate || !gender || !email) {
+    return res.status(400).json({ error: 'Заполните обязательные поля, включая email' });
   }
   if (!['male', 'female'].includes(gender)) {
     return res.status(400).json({ error: 'Некорректно указан пол' });
@@ -94,8 +94,8 @@ app.post('/api/registrations', (req, res) => {
 // Командная заявка 4×4
 app.post('/api/registrations/team', (req, res) => {
   const { teamName, captainName, phone, email } = req.body;
-  if (!teamName || !captainName || !phone) {
-    return res.status(400).json({ error: 'Заполните обязательные поля' });
+  if (!teamName || !captainName || !phone || !email) {
+    return res.status(400).json({ error: 'Заполните обязательные поля, включая email' });
   }
 
   const registration = {
