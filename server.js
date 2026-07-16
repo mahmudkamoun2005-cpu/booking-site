@@ -172,6 +172,18 @@ app.post('/admin/api/registrations/:id/status', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ---------- SPA fallback (ВАЖНО: должен идти последним) ----------
+// Решает проблему ссылок из Instagram/соцсетей, где "#" превращается в "%23"
+// и браузер запрашивает у сервера несуществующий путь вроде "/%23reg".
+// Раньше такие запросы получали 404. Теперь любой GET-запрос, не относящийся
+// к /api или /admin, просто отдаёт index.html — дальше уже сам браузер/скрипт
+// разбирается, что показать.
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  if (req.path.startsWith('/api') || req.path.startsWith('/admin')) return next();
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`Break Navsegda site running at ${BASE_URL}`);
 });
