@@ -272,6 +272,35 @@
   </div>
 </footer>
 
+<script>
+  // Фикс для ссылок из Instagram / соцсетей, где "#" в адресе иногда
+  // приходит закодированным как "%23" (например /%23reg?utm_source=ig...)
+  // или как параметр запроса вида ?open=reg.
+  // Браузер такие адреса не считает "настоящим" якорем и сам не скроллит
+  // к разделу — поэтому делаем это вручную при загрузке страницы.
+  (function () {
+    function scrollToReg() {
+      var el = document.getElementById('reg');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    var path = window.location.pathname; // например "/%23reg"
+    var params = new URLSearchParams(window.location.search);
+
+    var looksLikeRegPath = path.indexOf('reg') !== -1 && path !== '/';
+    var hasOpenParam = params.get('open') === 'reg';
+    var hasRealHash = window.location.hash === '#reg';
+
+    if (looksLikeRegPath || hasOpenParam || hasRealHash) {
+      // небольшая задержка, чтобы шрифты/стили успели применить layout
+      window.addEventListener('load', function () {
+        setTimeout(scrollToReg, 50);
+      });
+    }
+  })();
+</script>
 <script src="/app.js"></script>
 </body>
 </html>
